@@ -63,9 +63,14 @@ async def main_async():
     #   )
     #   return results
 
-    # --- Ваш код здесь ---
-    pass
-    # --- Конец вашего кода ---
+# --- Ваш код здесь ---
+    results = await asyncio.gather(
+        fetch_data_async("API сервер", 2),
+        fetch_data_async("База данных", 3),
+        fetch_data_async("Файловое хранилище", 1),
+    )
+    return results
+# --- Конец вашего кода ---
 
 
 if __name__ == '__main__':

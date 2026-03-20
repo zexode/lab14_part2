@@ -10,34 +10,6 @@ https://github.com/fa-python-network/3_Parallelism
 
 Запуск:
     python3 02_matrix_multiply.py
-
-═══════════════════════════════════════════════════════════════════════
-СПРАВКА: Оригинальный код из репозитория 3_Parallelism
-═══════════════════════════════════════════════════════════════════════
-
-В репозитории приведён следующий пример функции element и запуска процесса:
-
-    def element(index, A, B, res):
-        i, j = index
-        res = 0
-        N = len(A[0]) or len(B)
-        for k in range(N):
-            res += A[i][k] * B[k][j]
-        return res
-
-    from multiprocessing import Process
-
-    p1 = Process(target=element, args=[(0, 0), matrix1, matrix2, res])
-    p1.start()
-    p1.join()
-
-Проблема: переменная res не изменится в главном процессе, потому что
-каждый процесс работает с собственной КОПИЕЙ памяти. Запись в res внутри
-дочернего процесса не влияет на res в родительском.
-
-Решение: использовать multiprocessing.Queue для передачи результатов
-из дочернего процесса в родительский. Именно это вы реализуете ниже.
-═══════════════════════════════════════════════════════════════════════
 """
 
 import time
@@ -45,16 +17,6 @@ from multiprocessing import Process, Queue
 
 
 def element(index, A, B):
-    """Вычисляет один элемент произведения матриц A * B.
-
-    Args:
-        index: кортеж (i, j) — позиция элемента в результирующей матрице
-        A: первая матрица (список списков)
-        B: вторая матрица (список списков)
-
-    Returns:
-        Значение элемента C[i][j]
-    """
     i, j = index
     res = 0
     N = len(A[0])
@@ -64,14 +26,10 @@ def element(index, A, B):
 
 
 def element_to_queue(index, A, B, q):
-    """Обёртка над element(), записывающая результат в Queue."""
     result = element(index, A, B)
     q.put((index, result))
 
 
-# ──────────────────────────────────────────────
-# Исходные матрицы (3x3)
-# ──────────────────────────────────────────────
 matrix_a = [
     [1, 2, 3],
     [4, 5, 6],
@@ -86,7 +44,6 @@ matrix_b = [
 
 
 def sequential_multiply(A, B):
-    """Последовательное перемножение матриц (для сравнения)."""
     rows = len(A)
     cols = len(B[0])
     result = [[0] * cols for _ in range(rows)]
@@ -97,7 +54,6 @@ def sequential_multiply(A, B):
 
 
 def parallel_multiply(A, B):
-    """Параллельное перемножение матриц: один процесс на каждый элемент."""
     rows = len(A)
     cols = len(B[0])
     result = [[0] * cols for _ in range(rows)]
@@ -105,19 +61,12 @@ def parallel_multiply(A, B):
     q = Queue()
     processes = []
 
-    # TODO 1: Для каждого элемента (i, j) результирующей матрицы создайте
-    # отдельный процесс, который вызовет element_to_queue(index, A, B, q).
-    # Добавьте процесс в список processes и запустите его.
-    #
-    # Подсказка:
-    #   for i in range(rows):
-    #       for j in range(cols):
-    #           p = Process(target=element_to_queue, args=((i, j), A, B, q))
-    #           processes.append(p)
-    #           p.start()
-
     # --- Ваш код здесь ---
-
+    for i in range(rows):
+        for j in range(cols):
+            p = Process(target=element_to_queue, args=((i, j), A, B, q))
+            processes.append(p)
+            p.start()
     # --- Конец вашего кода ---
 
     for p in processes:
@@ -149,19 +98,15 @@ if __name__ == '__main__':
         print(f"  {row}")
     print(f"Время: {time_seq:.6f} сек\n")
 
-    # TODO 2: Замерьте время параллельного вычисления аналогично
-    # последовательному. Выведите результат и время. Сравните.
-    #
-    # Подсказка:
-    #   t2 = time.time()
-    #   result_par = parallel_multiply(matrix_a, matrix_b)
-    #   time_par = time.time() - t2
-    #   print("Результат (параллельно):")
-    #   for row in result_par:
-    #       print(f"  {row}")
-    #   print(f"Время: {time_par:.6f} сек\n")
-    #   print(f"Ускорение: {time_seq / time_par:.2f}x")
-
     # --- Ваш код здесь ---
+    t2 = time.time()
+    result_par = parallel_multiply(matrix_a, matrix_b)
+    time_par = time.time() - t2
 
+    print("Результат (параллельно):")
+    for row in result_par:
+        print(f"  {row}")
+    print(f"Время: {time_par:.6f} сек\n")
+
+    print(f"Ускорение: {time_seq / time_par:.2f}x")
     # --- Конец вашего кода ---
